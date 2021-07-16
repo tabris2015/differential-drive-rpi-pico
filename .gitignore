@@ -54,3 +54,5 @@ dkms.conf
 debug/
 build/
 release/
+.idea/
+.vscode/
