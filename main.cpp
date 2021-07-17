@@ -6,11 +6,17 @@
 #include "robot.h"
 #include "robot_pins.h"
 
+#define UART_ID uart0
 #define MOTOR_PPR 1496.0f
 
 #define PREV_MASK 0x1
 #define CURR_MASK 0x2
 #define INVALID_MASK 0x3
+
+// uart stuff
+char in_buffer[100];
+uint16_t char_idx = 0;
+
 
 const uint32_t encoder1_mask = (0x01 << M1_ENC_A_PIN) | (0x01 << M1_ENC_B_PIN);
 const uint32_t encoder2_mask = (0x01 << M2_ENC_A_PIN) | (0x01 << M2_ENC_B_PIN);
@@ -36,7 +42,13 @@ float kp1 = 0.04;
 float ki1 = 0.01;
 float kd1 = 0;
 
+float linear = 0.0;
+float angular = 0;
+uint32_t i = 0;
+
+
 uint32_t sample_time_ms = 20;
+
 
 Robot robot(
         kp1, kd1, ki1,
@@ -111,34 +123,79 @@ void setup() {
 void printState(float v, float w, RobotState state, RobotOdometry odometry)
 {
     printf(
-            "( %.2f, %.2f ) Setpoint: %.2f <=> %.2f \tSpeed: %.2f <=> %.2f \t Effort: %.2f <=> %.2f\r",
+            "( %.3f, %.3f ) Setpoint: %.2f <=> %.2f \tSpeed: %.2f <=> %.2f \t Effort: %.2f <=> %.2f\n",
             v, w,
             state.l_ref_speed, state.r_ref_speed, state.l_speed, state.r_speed, state.l_effort, state.r_effort);
 
 }
 
-int main()
+void failRoutine()
 {
-    setup();
-    uint32_t i = 0;
-    float linear = 0.1;
-    float angular = 0;
-    sleep_ms(1000);
     while (true)
     {
         gpio_put(LED_PIN, true);
-        sleep_ms(5);
+        sleep_ms(50);
         gpio_put(LED_PIN, false);
-        sleep_ms(15);
+        sleep_ms(1500);
+    }
+}
 
-        robot.setUnicycle(linear, 0.0f);
-        robot.updatePid(encoder1_ticks, encoder2_ticks);
+bool timerCallback(repeating_timer_t * rt)
+{
+//    timer_flag = false;
+    robot.setUnicycle(linear, angular);
+    robot.updatePid(encoder1_ticks, encoder2_ticks);
+    i++;
+    return true;
+}
 
-        i++;
-        if(i % 10 == 0)
+int main()
+{
+    setup();
+
+    repeating_timer_t timer;
+    if(!add_repeating_timer_ms(-sample_time_ms, timerCallback, NULL, &timer))
+    {
+        failRoutine();
+    }
+    gpio_put(LED_PIN, true);
+    sleep_ms(1000);
+    printf("Welcome! \n");
+    gpio_put(LED_PIN, false);
+    int ch;
+    int ch_idx;
+    int value1, value2;
+    float value3;
+    char* ch_ptr;
+    char* ch_ptr2;
+    char* ch_ptr3;
+    while (true)
+    {
+        ch = getchar_timeout_us(0);
+        while(ch != PICO_ERROR_TIMEOUT)
         {
-            printState(linear, angular, robot.getState(), robot.getOdometry());
+            gpio_put(LED_PIN, true);
+//            printf(" %c ", ch);
+            putchar(ch);
+            in_buffer[ch_idx++] = ch;
+            if(ch == '/')
+            {
+                in_buffer[ch_idx] = 0;      // end of string
+//                printf("\nreceived: %s\n", in_buffer);
+                ch_idx = 0;
+                linear = strtof(in_buffer, &ch_ptr);
+                angular = strtof(ch_ptr+1, &ch_ptr2);
+                printState(linear, angular, robot.getState(), robot.getOdometry());
+                break;
+            }
+
+            ch = getchar_timeout_us(0);
         }
+        gpio_put(LED_PIN, false);
+//        if(i % 10 == 0)
+//        {
+//            printState(linear, angular, robot.getState(), robot.getOdometry());
+//        }
     }
 }
 
