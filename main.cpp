@@ -17,7 +17,6 @@
 char in_buffer[100];
 uint16_t char_idx = 0;
 
-
 const uint32_t encoder1_mask = (0x01 << M1_ENC_A_PIN) | (0x01 << M1_ENC_B_PIN);
 const uint32_t encoder2_mask = (0x01 << M2_ENC_A_PIN) | (0x01 << M2_ENC_B_PIN);
 volatile int32_t encoder1_ticks = 0;
@@ -123,10 +122,11 @@ void setup() {
 void printState(float v, float w, RobotState state, RobotOdometry odometry)
 {
     printf(
-            "( %.3f, %.3f ) Setpoint: %.2f <=> %.2f \tSpeed: %.2f <=> %.2f \t Effort: %.2f <=> %.2f\n",
-            v, w,
-            state.l_ref_speed, state.r_ref_speed, state.l_speed, state.r_speed, state.l_effort, state.r_effort);
-
+            // diff setpoint,wheel setpoint, speed
+            "%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+            state.l_ref_speed, state.r_ref_speed, state.l_speed, state.r_speed, state.l_effort, state.r_effort,
+            odometry.x_pos, odometry.y_pos, odometry.theta, odometry.v, odometry.w
+            );
 }
 
 void failRoutine()

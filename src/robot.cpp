@@ -79,6 +79,8 @@ void Robot::updateOdometry(int32_t dl_ticks, int32_t dr_ticks) {
     _odom.x_pos += delta_center * cosf(_odom.theta);
     _odom.y_pos += delta_center * sinf(_odom.theta);
     _odom.theta += (delta_r - delta_l) / ROBOT_WHEEL_SEPARATION;
+    _odom.v = _linear;
+    _odom.w = _angular;
 }
 
 void Robot::setWheels(float left_speed, float right_speed)
@@ -98,6 +100,8 @@ void Robot::setUnicycle(float v, float w)
     float v_l = (2 * v - w * ROBOT_WHEEL_SEPARATION) / (2 * ROBOT_WHEEL_RADIUS);
     float v_r = (2 * v + w * ROBOT_WHEEL_SEPARATION) / (2 * ROBOT_WHEEL_RADIUS);
 
+    _linear = v;
+    _angular = w;
     setWheels(v_l, v_r);
 }
 

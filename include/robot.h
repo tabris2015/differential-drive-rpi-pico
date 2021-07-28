@@ -88,6 +88,8 @@ private:
     float _r_input;
     float _r_output;
     float _r_setpoint;
+    float _linear;
+    float _angular;
 
     DCMotor _l_motor;
     DCMotor _r_motor;
